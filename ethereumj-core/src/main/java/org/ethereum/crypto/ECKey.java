@@ -68,7 +68,7 @@ import org.spongycastle.util.encoders.Hex;
  * This code is borrowed from the bitcoinj project and altered to fit Ethereum.<br>
  * See <a href="https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/com/google/bitcoin/core/ECKey.java">bitcoinj on GitHub</a>
  */
-public class ECKey implements Serializable {
+public class ECKey implements PublicKey, Serializable {
 	private static final Logger logger = LoggerFactory.getLogger(ECKey.class);
 	
     /** The parameters of the secp256k1 curve that Ethereum uses. */
