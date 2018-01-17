@@ -21,21 +21,33 @@ public class Main {
             throw new Exception("empty passphrase");
         }
 
-        System.out.print("Enter index: ");
+        System.out.print("Enter start index: ");
         String indexString = bufferedReader.readLine();
         int index = Integer.parseInt(indexString);
         if (index < 0) {
             throw new Exception("only positive index are available");
         }
 
+        System.out.print("Enter count (1): ");
+        String countString = bufferedReader.readLine();
+        int count = 1;
+        if (countString != null && !countString.isEmpty()) {
+            count = Integer.parseInt(countString);
+        }
+        if (count < 1) {
+            count = 1;
+        }
+
         System.out.print("Do you need private key (no/yes): ");
         String yesNo = bufferedReader.readLine();
         boolean isPrivateRequired = "yes".equalsIgnoreCase(yesNo);
 
-        HdKeyNode node = generateForEthereum(passphrase, index, isPrivateRequired);
-        System.out.println("Address " + index + ": 0x" + HexUtils.toHex(node.getPublicKey().getAddress()));
-        if (node.isPrivateHdKeyNode()) {
-            System.out.println("Private " + index + ": 0x" + HexUtils.toHex(node.getPrivateKey().getPrivKeyBytes()));
+        for (int i = index; i < count + index; i ++) {
+            HdKeyNode node = generateForEthereum(passphrase, i, isPrivateRequired);
+            System.out.println("Address " + i + ": 0x" + HexUtils.toHex(node.getPublicKey().getAddress()));
+            if (node.isPrivateHdKeyNode()) {
+                System.out.println("Private " + i + ": 0x" + HexUtils.toHex(node.getPrivateKey().getPrivKeyBytes()));
+            }
         }
 
     }
