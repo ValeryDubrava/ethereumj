@@ -1,6 +1,7 @@
 package io.mywish.hdwallet;
 
 import com.mrd.bitlib.crypto.HdKeyNode;
+import com.mrd.bitlib.model.NetworkParameters;
 import com.mrd.bitlib.model.hdpath.HdKeyPath;
 import com.mrd.bitlib.util.HexUtils;
 import com.mrd.bitlib.util.KeyConverter;
@@ -8,9 +9,17 @@ import org.ethereum.crypto.HashUtil;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
+import java.util.EnumSet;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Main {
     private final static KeyConverter keyConverter = new KeyConverter();
+    private final static Charset CHARSET = Charset.forName("US-ASCII");
 
     public static void main(String[] args) throws Exception {
         interact();
@@ -18,10 +27,44 @@ public class Main {
 
     private static void interact() throws Exception {
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
-        System.out.print("Enter passphrase: ");
-        String passphrase = bufferedReader.readLine();
-        if (passphrase == null || passphrase.isEmpty()) {
-            throw new Exception("empty passphrase");
+        System.out.print("Chose mode: (p)assphrase, (e)xt public key: ");
+        String modeString = bufferedReader.readLine();
+        Mode mode = Mode.PASSPHRASE;
+        if (modeString.startsWith("e")) {
+            mode = Mode.EXT_PUB;
+        }
+        else if (modeString.startsWith("p")) {
+            mode = Mode.PASSPHRASE;
+        }
+        else {
+            System.out.println("Wrong value, use passphrase by default.");
+        }
+
+        String passphrase;
+        HdKeyNode root;
+        if (mode == Mode.PASSPHRASE) {
+            System.out.print("Enter passphrase: ");
+            passphrase = bufferedReader.readLine();
+            if (passphrase == null || passphrase.isEmpty()) {
+                throw new Exception("empty passphrase");
+            }
+            root = generateRootNode(passphrase);
+        }
+        else if (mode == Mode.EXT_PUB) {
+            System.out.print("Enter ex key: ");
+            String exKeyString = bufferedReader.readLine();
+            if (exKeyString == null || exKeyString.isEmpty()) {
+                throw new Exception("empty ex key string");
+            }
+            try {
+                root = HdKeyNode.parse(exKeyString, NetworkParameters.productionNetwork);
+            }
+            catch (Exception ex) {
+                throw new Exception("Parsing error.", ex);
+            }
+        }
+        else {
+            throw new Exception("Unknown mode.");
         }
 
         System.out.print("Enter start index: ");
@@ -41,31 +84,81 @@ public class Main {
             count = 1;
         }
 
-        System.out.print("Do you need private key (no/yes): ");
-        String yesNo = bufferedReader.readLine();
-        boolean isPrivateRequired = "yes".equalsIgnoreCase(yesNo);
+        System.out.print("Available modes: ");
+        System.out.println(
+                EnumSet.allOf(OutputMode.class)
+                        .stream()
+                        .map(Enum::name)
+                        .map(String::toLowerCase)
+                        .collect(Collectors.joining(", "))
+        );
+        System.out.print("Please, chose on or several: ");
+        String modesString = bufferedReader.readLine();
+        Set<OutputMode> outputModes = Stream.of(modesString.split("[\\s,\\.]"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(String::toUpperCase)
+                .map(s -> {
+                    try {
+                        return OutputMode.valueOf(s);
+                    }
+                    catch (Exception ignored) {
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
 
-        for (int i = index; i < count + index; i ++) {
-            HdKeyNode node = generateForEthereum(passphrase, i, isPrivateRequired);
-            System.out.println("ETH Address " + i + ": 0x" + HexUtils.toHex(node.getPublicKey().getAddress()));
-            System.out.println("Public key " + i + ": 0x" + HexUtils.toHex(node.getPublicKey().getPubKey()));
-            System.out.println("EOS Public key " + i + ": " + keyConverter.toEosPubKey(node.getPublicKey()));
-            if (node.isPrivateHdKeyNode()) {
-                System.out.println("ETH Private " + i + ": 0x" + HexUtils.toHex(node.getPrivateKey().getPrivKeyBytes()));
-                System.out.println("EOS Private " + i + ": " + keyConverter.toWif(node.getPrivateKey()));
+        boolean isPrivateRequired = outputModes.contains(OutputMode.PRIVATE);
+        if (!isPrivateRequired) {
+            root = root.getPublicNode();
+        }
+
+        System.out.println("Extended Public Key: " + root.getPublicNode().serialize(NetworkParameters.productionNetwork));
+
+        for (int i = index; i < count + index; i++) {
+            HdKeyNode node = generateChildren(root, i);
+            if (outputModes.contains(OutputMode.ETH) || outputModes.contains(OutputMode.ALL_PUBLIC)) {
+                System.out.println("ETH Address " + i + ": 0x" + HexUtils.toHex(node.getPublicKey().getAddress()));
+            }
+            if (outputModes.contains(OutputMode.RAW) || outputModes.contains(OutputMode.ALL_PUBLIC)) {
+                System.out.println("Public key " + i + ": 0x" + HexUtils.toHex(node.getPublicKey().getPubKey()));
+            }
+            if (outputModes.contains(OutputMode.EOS) || outputModes.contains(OutputMode.ALL_PUBLIC)) {
+                System.out.println("EOS Public key " + i + ": " + keyConverter.toEosPubKey(node.getPublicKey()));
+            }
+            if (node.isPrivateHdKeyNode() && (outputModes.contains(OutputMode.PRIVATE))) {
+                if (outputModes.contains(OutputMode.ETH) || outputModes.contains(OutputMode.ALL_PUBLIC)) {
+                    System.out.println("ETH Private " + i + ": 0x" + HexUtils.toHex(node.getPrivateKey().getPrivKeyBytes()));
+                }
+                if (outputModes.contains(OutputMode.EOS) || outputModes.contains(OutputMode.ALL_PUBLIC)) {
+                    System.out.println("EOS Private " + i + ": " + keyConverter.toWif(node.getPrivateKey()));
+                }
             }
         }
 
     }
 
-    private static HdKeyNode generateForEthereum(String passphrase, int index, boolean isPrivate) throws Exception {
+    public static HdKeyNode generateRootNode(String passphrase) throws UnsupportedEncodingException {
         HdKeyPath path = HdKeyPath.valueOf("m/44'/60'/0'/0");
-        HdKeyNode node = HdKeyNode.fromSeed(HashUtil.sha3(passphrase.getBytes("US-ASCII")));
-        HdKeyNode parent = node.createChildNode(path);
-        if (!isPrivate) {
-            parent = parent.getPublicNode();
-        }
+        HdKeyNode root = HdKeyNode.fromSeed(HashUtil.sha3(passphrase.getBytes(CHARSET)));
+        return root.createChildNode(path);
+    }
 
-        return parent.createChildNode(index);
+    private static HdKeyNode generateChildren(HdKeyNode node, int index) {
+        return node.createChildNode(index);
+    }
+
+    enum Mode {
+        PASSPHRASE,
+        EXT_PUB,
+    }
+
+    enum OutputMode {
+        ETH,
+        EOS,
+        RAW,
+        PRIVATE,
+        ALL_PUBLIC
     }
 }
