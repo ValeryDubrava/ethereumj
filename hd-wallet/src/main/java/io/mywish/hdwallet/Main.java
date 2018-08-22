@@ -3,12 +3,15 @@ package io.mywish.hdwallet;
 import com.mrd.bitlib.crypto.HdKeyNode;
 import com.mrd.bitlib.model.hdpath.HdKeyPath;
 import com.mrd.bitlib.util.HexUtils;
+import com.mrd.bitlib.util.KeyConverter;
 import org.ethereum.crypto.HashUtil;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
 public class Main {
+    private final static KeyConverter keyConverter = new KeyConverter();
+
     public static void main(String[] args) throws Exception {
         interact();
     }
@@ -44,9 +47,12 @@ public class Main {
 
         for (int i = index; i < count + index; i ++) {
             HdKeyNode node = generateForEthereum(passphrase, i, isPrivateRequired);
-            System.out.println("Address " + i + ": 0x" + HexUtils.toHex(node.getPublicKey().getAddress()));
+            System.out.println("ETH Address " + i + ": 0x" + HexUtils.toHex(node.getPublicKey().getAddress()));
+            System.out.println("Public key " + i + ": 0x" + HexUtils.toHex(node.getPublicKey().getPubKey()));
+            System.out.println("EOS Public key " + i + ": " + keyConverter.toEosPubKey(node.getPublicKey()));
             if (node.isPrivateHdKeyNode()) {
-                System.out.println("Private " + i + ": 0x" + HexUtils.toHex(node.getPrivateKey().getPrivKeyBytes()));
+                System.out.println("ETH Private " + i + ": 0x" + HexUtils.toHex(node.getPrivateKey().getPrivKeyBytes()));
+                System.out.println("EOS Private " + i + ": " + keyConverter.toWif(node.getPrivateKey()));
             }
         }
 

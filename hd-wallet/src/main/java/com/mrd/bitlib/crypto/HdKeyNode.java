@@ -24,7 +24,6 @@ import org.bitcoinj.core.Base58;
 import org.bitcoinj.core.Sha256Hash;
 import org.bitcoinj.crypto.HDUtils;
 import org.ethereum.crypto.ECKey;
-import org.spongycastle.crypto.digests.SHA3Digest;
 import org.spongycastle.math.ec.ECPoint;
 
 import java.io.Serializable;
