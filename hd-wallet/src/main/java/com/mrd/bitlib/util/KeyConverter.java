@@ -49,7 +49,7 @@ public class KeyConverter {
     }
 
     public String toEosPubKey(ECKey ecKey) {
-        byte[] keyBytes = ecKey.getPubKey();
+        byte[] keyBytes = ecKey.getPubKeyPoint().getEncoded(true);
         byte[] digest = calcDigest(keyBytes, 0, keyBytes.length, new RIPEMD160Digest(), false);
         byte[] result = new byte[keyBytes.length + 4];
         System.arraycopy(keyBytes, 0, result, 0, keyBytes.length);

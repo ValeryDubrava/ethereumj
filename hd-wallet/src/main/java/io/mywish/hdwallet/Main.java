@@ -57,7 +57,8 @@ public class Main {
                 throw new Exception("empty ex key string");
             }
             try {
-                root = HdKeyNode.parse(exKeyString, NetworkParameters.productionNetwork);
+                HdKeyNode exKey = HdKeyNode.parse(exKeyString, NetworkParameters.productionNetwork);
+                root = exKey.createChildNode(HdKeyPath.valueOf("m"));
             }
             catch (Exception ex) {
                 throw new Exception("Parsing error.", ex);
@@ -85,9 +86,11 @@ public class Main {
         }
 
         System.out.print("Available modes: ");
+        final Mode finalMode = mode;
         System.out.println(
                 EnumSet.allOf(OutputMode.class)
                         .stream()
+                        .filter(outputMode -> finalMode != Mode.EXT_PUB || outputMode != OutputMode.PRIVATE)
                         .map(Enum::name)
                         .map(String::toLowerCase)
                         .collect(Collectors.joining(", "))
@@ -110,9 +113,9 @@ public class Main {
                 .collect(Collectors.toSet());
 
         boolean isPrivateRequired = outputModes.contains(OutputMode.PRIVATE);
-        if (!isPrivateRequired) {
-            root = root.getPublicNode();
-        }
+//        if (!isPrivateRequired) {
+//            root = root.getPublicNode();
+//        }
 
         System.out.println("Extended Public Key: " + root.getPublicNode().serialize(NetworkParameters.productionNetwork));
 
@@ -122,16 +125,16 @@ public class Main {
                 System.out.println("ETH Address " + i + ": 0x" + HexUtils.toHex(node.getPublicKey().getAddress()));
             }
             if (outputModes.contains(OutputMode.RAW) || outputModes.contains(OutputMode.ALL_PUBLIC)) {
-                System.out.println("Public key " + i + ": 0x" + HexUtils.toHex(node.getPublicKey().getPubKey()));
+                System.out.println("Public key " + i + ": 0x" + HexUtils.toHex(node.getPublicKey().getPubKeyPoint().getEncoded(true)));
             }
             if (outputModes.contains(OutputMode.EOS) || outputModes.contains(OutputMode.ALL_PUBLIC)) {
                 System.out.println("EOS Public key " + i + ": " + keyConverter.toEosPubKey(node.getPublicKey()));
             }
             if (node.isPrivateHdKeyNode() && (outputModes.contains(OutputMode.PRIVATE))) {
-                if (outputModes.contains(OutputMode.ETH) || outputModes.contains(OutputMode.ALL_PUBLIC)) {
+                if (outputModes.contains(OutputMode.ETH)) {
                     System.out.println("ETH Private " + i + ": 0x" + HexUtils.toHex(node.getPrivateKey().getPrivKeyBytes()));
                 }
-                if (outputModes.contains(OutputMode.EOS) || outputModes.contains(OutputMode.ALL_PUBLIC)) {
+                if (outputModes.contains(OutputMode.EOS)) {
                     System.out.println("EOS Private " + i + ": " + keyConverter.toWif(node.getPrivateKey()));
                 }
             }
@@ -142,7 +145,7 @@ public class Main {
     public static HdKeyNode generateRootNode(String passphrase) throws UnsupportedEncodingException {
         HdKeyPath path = HdKeyPath.valueOf("m/44'/60'/0'/0");
         HdKeyNode root = HdKeyNode.fromSeed(HashUtil.sha3(passphrase.getBytes(CHARSET)));
-        return root.createChildNode(path);
+        return root.createChildNode(path).getPublicNode();
     }
 
     private static HdKeyNode generateChildren(HdKeyNode node, int index) {
