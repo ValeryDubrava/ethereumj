@@ -112,11 +112,6 @@ public class Main {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        boolean isPrivateRequired = outputModes.contains(OutputMode.PRIVATE);
-//        if (!isPrivateRequired) {
-//            root = root.getPublicNode();
-//        }
-
         System.out.println("Extended Public Key: " + root.getPublicNode().serialize(NetworkParameters.productionNetwork));
 
         for (int i = index; i < count + index; i++) {
@@ -145,7 +140,7 @@ public class Main {
     public static HdKeyNode generateRootNode(String passphrase) throws UnsupportedEncodingException {
         HdKeyPath path = HdKeyPath.valueOf("m/44'/60'/0'/0");
         HdKeyNode root = HdKeyNode.fromSeed(HashUtil.sha3(passphrase.getBytes(CHARSET)));
-        return root.createChildNode(path).getPublicNode();
+        return root.createChildNode(path);
     }
 
     private static HdKeyNode generateChildren(HdKeyNode node, int index) {
