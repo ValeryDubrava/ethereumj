@@ -2,12 +2,14 @@ package com.mrd.bitlib.util;
 
 import org.bitcoinj.core.Base58;
 import org.ethereum.crypto.ECKey;
+import org.spongycastle.crypto.ExtendedDigest;
 import org.spongycastle.crypto.digests.GeneralDigest;
 import org.spongycastle.crypto.digests.RIPEMD160Digest;
 import org.spongycastle.crypto.digests.SHA256Digest;
+import org.spongycastle.crypto.digests.SHA3Digest;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
+import java.security.spec.ECPoint;
 
 public class KeyConverter {
     /**
@@ -29,7 +31,7 @@ public class KeyConverter {
         return toWif(keyBytes, (byte) (isProduction ? 0x80 : 0xEF), digest);
     }
 
-    public String toWif(byte[] keyBytes, byte prefix, GeneralDigest digest) {
+    public String toWif(byte[] keyBytes, byte prefix, ExtendedDigest digest) {
         ByteBuffer buffer = ByteBuffer.wrap(new byte[keyBytes.length + 5]);
         buffer.put(prefix);
         buffer.put(keyBytes);
@@ -57,6 +59,26 @@ public class KeyConverter {
         return "EOS" + Base58.encode(result);
     }
 
+    public String toTronPubKeyFromEth(ECKey ecKey) {
+        return "T" + toWif(ecKey.getAddress(), (byte) 0x41, new SHA256Digest());
+    }
+
+    public String toTronPubKey(ECPoint point) {
+        byte[] keyBytes = new byte[65];
+        System.arraycopy(point.getAffineX().toByteArray(), 0, keyBytes, 0, 33);
+        System.arraycopy(point.getAffineY().toByteArray(), 0, keyBytes, 33, 32);
+        // only for standard, it is not really used below
+        keyBytes[0] = 0x04;
+        byte[] hash = calcDigest(keyBytes, 1, keyBytes.length - 1, new SHA3Digest(256), false);
+        byte[] result = new byte[25];
+        System.arraycopy(hash, 12, result, 1, 20);
+        result[0] = 0x41;
+        byte[] digest = calcDigest(result, 0, 21, new SHA256Digest(), true);
+        System.arraycopy(digest, 0, result, 21, 4);
+        String address58 = Base58.encode(result);
+        return "T" + address58;
+    }
+
     public ECKey fromEosPubKey(String publicKey) {
         if (!publicKey.startsWith("EOS")) {
             throw new IllegalArgumentException("publicKey wrong format, it must be prefixed EOS");
@@ -78,7 +100,7 @@ public class KeyConverter {
         return ECKey.fromPublicOnly(key);
     }
 
-    private byte[] calcDigest(byte[] exKey, int offset, int length, GeneralDigest digest, boolean secondPass) {
+    private byte[] calcDigest(byte[] exKey, int offset, int length, ExtendedDigest digest, boolean secondPass) {
         digest.update(exKey, offset, length);
         byte[] digestFirstPass = new byte[digest.getDigestSize()];
         digest.doFinal(digestFirstPass, 0);

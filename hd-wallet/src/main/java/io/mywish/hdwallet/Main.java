@@ -125,12 +125,15 @@ public class Main {
             if (outputModes.contains(OutputMode.EOS) || outputModes.contains(OutputMode.ALL_PUBLIC)) {
                 System.out.println("EOS Public key " + i + ": " + keyConverter.toEosPubKey(node.getPublicKey()));
             }
+            if (outputModes.contains(OutputMode.TRON) || outputModes.contains(OutputMode.ALL_PUBLIC)) {
+                System.out.println("TRON Public key " + i + ": " + keyConverter.toTronPubKeyFromEth(node.getPublicKey()));
+            }
             if (node.isPrivateHdKeyNode() && (outputModes.contains(OutputMode.PRIVATE))) {
-                if (outputModes.contains(OutputMode.ETH)) {
-                    System.out.println("ETH Private " + i + ": 0x" + HexUtils.toHex(node.getPrivateKey().getPrivKeyBytes()));
+                if (outputModes.contains(OutputMode.ETH) || outputModes.contains(OutputMode.TRON) || outputModes.contains(OutputMode.RAW)) {
+                    System.out.println("Private " + i + ": 0x" + HexUtils.toHex(node.getPrivateKey().getPrivKeyBytes()));
                 }
                 if (outputModes.contains(OutputMode.EOS)) {
-                    System.out.println("EOS Private " + i + ": " + keyConverter.toWif(node.getPrivateKey()));
+                    System.out.println("EOS (WIF) Private " + i + ": " + keyConverter.toWif(node.getPrivateKey()));
                 }
             }
         }
@@ -156,6 +159,7 @@ public class Main {
         ETH,
         EOS,
         RAW,
+        TRON,
         PRIVATE,
         ALL_PUBLIC
     }

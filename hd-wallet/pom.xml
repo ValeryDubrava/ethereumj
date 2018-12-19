@@ -13,9 +13,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>ethereumj2</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ethereumj</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.bitcoinj</groupId>
@@ -23,5 +23,25 @@
             <version>0.14.7</version>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>2.0.2.RELEASE</version>
+                <configuration>
+                    <mainClass>io.mywish.hdwallet.Main</mainClass>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
