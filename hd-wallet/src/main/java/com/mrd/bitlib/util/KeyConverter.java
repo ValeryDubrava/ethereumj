@@ -60,7 +60,7 @@ public class KeyConverter {
     }
 
     public String toTronPubKeyFromEth(ECKey ecKey) {
-        return "T" + toWif(ecKey.getAddress(), (byte) 0x41, new SHA256Digest());
+        return toWif(ecKey.getAddress(), (byte) 0x41, new SHA256Digest());
     }
 
     public String toTronPubKey(ECPoint point) {
@@ -76,7 +76,7 @@ public class KeyConverter {
         byte[] digest = calcDigest(result, 0, 21, new SHA256Digest(), true);
         System.arraycopy(digest, 0, result, 21, 4);
         String address58 = Base58.encode(result);
-        return "T" + address58;
+        return address58;
     }
 
     public ECKey fromEosPubKey(String publicKey) {
