@@ -132,7 +132,7 @@ public class Main {
                 System.out.println("BTC Public key " + i + ": " + keyConverter.toBtcPublic(node.getPublicKey()));
             }
             if (node.isPrivateHdKeyNode() && (outputModes.contains(OutputMode.PRIVATE))) {
-                if (outputModes.contains(OutputMode.ETH) || outputModes.contains(OutputMode.TRON) || outputModes.contains(OutputMode.RAW)) {
+                if (outputModes.contains(OutputMode.ETH) || outputModes.contains(OutputMode.TRON) || outputModes.contains(OutputMode.BTC) || outputModes.contains(OutputMode.RAW)) {
                     System.out.println("Private " + i + ": 0x" + HexUtils.toHex(node.getPrivateKey().getPrivKeyBytes()));
                 }
                 if (outputModes.contains(OutputMode.EOS)) {
