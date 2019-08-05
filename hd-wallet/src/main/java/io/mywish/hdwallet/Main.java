@@ -128,6 +128,9 @@ public class Main {
             if (outputModes.contains(OutputMode.TRON) || outputModes.contains(OutputMode.ALL_PUBLIC)) {
                 System.out.println("TRON Public key " + i + ": " + keyConverter.toTronPubKeyFromEth(node.getPublicKey()));
             }
+            if (outputModes.contains(OutputMode.BTC) || outputModes.contains(OutputMode.ALL_PUBLIC)) {
+                System.out.println("BTC Public key " + i + ": " + keyConverter.toBtcPublic(node.getPublicKey()));
+            }
             if (node.isPrivateHdKeyNode() && (outputModes.contains(OutputMode.PRIVATE))) {
                 if (outputModes.contains(OutputMode.ETH) || outputModes.contains(OutputMode.TRON) || outputModes.contains(OutputMode.RAW)) {
                     System.out.println("Private " + i + ": 0x" + HexUtils.toHex(node.getPrivateKey().getPrivKeyBytes()));
@@ -161,6 +164,7 @@ public class Main {
         RAW,
         TRON,
         PRIVATE,
+        BTC,
         ALL_PUBLIC
     }
 }

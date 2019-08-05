@@ -17,21 +17,26 @@ public class KeyConverter {
      *
      * @param ecKey        Elliptic Curve key container with private key.
      * @param isProduction Is key for production environment or testnet.
+     * @param isPublic      If public key convert, otherwise private.
      * @return Private key in WIF (WEF) format.
      */
-    public String toWif(ECKey ecKey, boolean isProduction) {
-        byte[] keyBytes = ecKey.getPrivKeyBytes();
+    public String toWif(ECKey ecKey, boolean isProduction, boolean isPublic) {
+        byte[] keyBytes = isPublic ? ecKey.getPubKeyPoint().getEncoded(false) : ecKey.getPrivKeyBytes();
         if (keyBytes == null) {
             throw new IllegalArgumentException("ecKey must be private key");
         }
         return toWif(keyBytes, isProduction);
     }
 
+    public String toWif(ECKey ecKey, boolean isProduction) {
+        return toWif(ecKey, isProduction, false);
+    }
+
     public String toWif(byte[] keyBytes, boolean isProduction, GeneralDigest digest) {
         return toWif(keyBytes, (byte) (isProduction ? 0x80 : 0xEF), digest);
     }
 
-    public String toWif(byte[] keyBytes, byte prefix, ExtendedDigest digest) {
+    public String toWif(byte[] keyBytes, byte prefix, GeneralDigest digest) {
         ByteBuffer buffer = ByteBuffer.wrap(new byte[keyBytes.length + 5]);
         buffer.put(prefix);
         buffer.put(keyBytes);
@@ -48,6 +53,19 @@ public class KeyConverter {
 
     public String toWif(ECKey ecKey) {
         return toWif(ecKey, true);
+    }
+
+    public String toBtcPublic(ECKey ecKey) {
+        byte[] raw = ecKey.getPubKeyPoint().getEncoded(true);
+        SHA256Digest digest256 = new SHA256Digest();
+        digest256.update(raw, 0, raw.length);
+        byte[] hashedKey = new byte[digest256.getDigestSize()];
+        digest256.doFinal(hashedKey, 0);
+        RIPEMD160Digest digest160 = new RIPEMD160Digest();
+        digest160.update(hashedKey, 0, hashedKey.length);
+        byte[] twiceHashedKey = new byte[digest160.getDigestSize()];
+        digest160.doFinal(twiceHashedKey, 0);
+        return toWif(twiceHashedKey,(byte) 0x0, new SHA256Digest());
     }
 
     public String toEosPubKey(ECKey ecKey) {
